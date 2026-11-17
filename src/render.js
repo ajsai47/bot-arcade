@@ -12,4 +12,22 @@ export function render(ctx, state) {
   ctx.fillStyle = '#fff';
   ctx.font = '14px monospace';
   ctx.fillText('score ' + state.score, 8, 18);
+  ctx.fillText('lives ' + state.lives, 8, 36);
+
+  if (state.lives === 0) {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+    ctx.fillRect(0, 0, state.width, state.height);
+
+    const x = state.width / 2;
+    const y = state.height / 2;
+    ctx.save();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 32px monospace';
+    ctx.fillText('Game over', x, y - 28);
+    ctx.font = '18px monospace';
+    ctx.fillText('Final score: ' + state.score, x, y + 4);
+    ctx.fillText('Press Space / tap to restart', x, y + 36);
+    ctx.restore();
+  }
 }
