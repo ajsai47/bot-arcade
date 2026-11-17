@@ -105,8 +105,9 @@ export function update(state, input, dt) {
     state.levelUpUntil = state.time + LEVEL_UP_DURATION;
   }
   const p = state.paddle;
-  const shrinkTime = Math.max(0, dt - state.widePaddleTime);
-  state.widePaddleTime = Math.max(0, state.widePaddleTime - dt);
+  const elapsed = Math.max(0, dt);
+  const shrinkTime = Math.max(0, elapsed - state.widePaddleTime);
+  state.widePaddleTime = Math.max(0, state.widePaddleTime - elapsed);
   if (shrinkTime > 0 && p.w > BASE_PADDLE_WIDTH) {
     resizePaddle(state, Math.max(BASE_PADDLE_WIDTH, p.w - PADDLE_SHRINK_SPEED * shrinkTime));
   }
