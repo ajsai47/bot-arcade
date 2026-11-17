@@ -10,6 +10,15 @@ const params = new URLSearchParams(location.search);
 const state = createState(canvas.width, canvas.height, { demo: params.has('demo'), seed: Number(params.get('seed') || 1) });
 const input = attachInput(window);
 
+window.addEventListener('keydown', (event) => {
+  if (event.code !== 'Space' || state.lives !== 0) return;
+  event.preventDefault();
+  if (!event.repeat) input.restart = true;
+});
+canvas.addEventListener('pointerdown', () => {
+  if (state.lives === 0) input.restart = true;
+});
+
 window.__game = state;
 
 let last = performance.now();
@@ -17,6 +26,7 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   update(state, input, dt);
+  input.restart = false;
   render(ctx, state);
   requestAnimationFrame(frame);
 }
