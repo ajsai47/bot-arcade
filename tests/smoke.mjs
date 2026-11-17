@@ -22,6 +22,45 @@ const page = await browser.newPage({ hasTouch: true });
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 await page.goto(`http://localhost:${port}/?demo=1`);
+const visuals = await page.evaluate(async () => {
+  const { render } = await import('/src/render.js');
+  const canvas = document.createElement('canvas');
+  canvas.width = 800;
+  canvas.height = 600;
+  const ctx = canvas.getContext('2d');
+  const state = {
+    width: canvas.width, height: canvas.height, score: 0, lives: 3, combo: 1,
+    paddle: { x: 350, y: 570, w: 100, h: 12 },
+    comets: [{ x: 196, y: 200, r: 8 }],
+    particles: [],
+    floatingScores: [],
+  };
+  const pixel = (x, y) => ctx.getImageData(x, y, 1, 1).data;
+  const stars = () => ctx.getImageData(550, 150, 150, 150).data;
+  render(ctx, state, 0);
+  const first = stars();
+  const darkSky = pixel(20, 100)[2] < 64;
+  const fadingTail = pixel(196, 176)[0] > pixel(196, 158)[0];
+  const roundComet = pixel(196, 200)[0] > pixel(203, 207)[0] + 60;
+  const glowingPaddle = pixel(400, 566)[1] > pixel(400, 546)[1];
+  const particleBackground = pixel(406, 500)[0];
+  const combo = () => ctx.getImageData(345, 17, 110, 20).data;
+  const initialCombo = combo();
+  state.particles.push({ x: 400, y: 500, life: 0.7 });
+  state.floatingScores.push({ x: 400, y: 450, value: 3, life: 1 });
+  state.combo = 3;
+  render(ctx, state, 0);
+  const glowingParticles = pixel(406, 500)[0] > particleBackground;
+  const neonScore = ctx.getImageData(375, 425, 50, 30).data.some((value, i, pixels) =>
+    i % 4 === 0 && value > 200 && value - pixels[i + 2] > 50);
+  const centeredCombo = combo().some((value, i) => value !== initialCombo[i]);
+  render(ctx, state, 2);
+  const driftingStars = stars().some((value, i) => value !== first[i]);
+  return {
+    darkSky, fadingTail, roundComet, glowingPaddle, driftingStars, glowingParticles, neonScore, centeredCombo,
+  };
+});
+for (const [feature, visible] of Object.entries(visuals)) assert.ok(visible, feature);
 await page.waitForTimeout(6000);
 const score = await page.evaluate(() => window.__game.score);
 const gameOver = await page.waitForFunction(() => window.__game.lives === 0 && window.__game.score);
