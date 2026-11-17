@@ -6,7 +6,15 @@ export function rng(seed) {
 const STARTING_LIVES = 3;
 const DEMO_RESTART_DELAY = 2;
 
-export function createState(width, height, { demo = false, seed = 1 } = {}) {
+function bestScoreKey(demo) {
+  return demo ? 'comet-catcher:demo-best' : 'comet-catcher:best';
+}
+
+export function createState(width, height, { demo = false, seed = 1, bestScore = 0 } = {}) {
+  try {
+    const saved = Number(globalThis.localStorage.getItem(bestScoreKey(demo)));
+    if (Number.isSafeInteger(saved) && saved >= 0) bestScore = Math.max(bestScore, saved);
+  } catch {}
   return {
     width, height, demo, seed,
     random: rng(seed),
@@ -14,6 +22,8 @@ export function createState(width, height, { demo = false, seed = 1 } = {}) {
     comets: [],
     spawnTimer: 0,
     score: 0,
+    bestScore,
+    newBest: false,
     lives: STARTING_LIVES,
     gameOverTime: 0,
     combo: 1,
@@ -80,6 +90,13 @@ export function update(state, input, dt) {
       state.streak += 1;
       state.combo = Math.min(state.streak, 5);
       state.score += state.combo;
+      if (state.score > state.bestScore) {
+        state.bestScore = state.score;
+        state.newBest = true;
+        try {
+          globalThis.localStorage.setItem(bestScoreKey(state.demo), String(state.bestScore));
+        } catch {}
+      }
       state.floatingScores.push({ x: c.x, y: p.y - 12, value: state.combo, life: 1 });
       for (let i = 0; i < 16; i++) {
         const angle = i * Math.PI * 2 / 16;
