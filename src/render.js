@@ -116,7 +116,32 @@ export function render(ctx, state, time = performance.now() / 1000) {
   ctx.fillText('LIVES  ' + state.lives, state.width - 24, 33);
   ctx.fillStyle = 'rgba(127, 169, 247, 0.24)';
   ctx.fillRect(24, 45, state.width - 48, 1);
+  ctx.textAlign = 'center';
+  ctx.font = '700 14px ' + hudFont;
+  ctx.fillStyle = '#86f6ff';
+  ctx.fillText('LEVEL ' + (state.level ?? 1), state.width / 2, 68);
   ctx.restore();
+
+  if (state.lives > 0 && state.time < state.levelUpUntil) {
+    const x = state.width / 2;
+    const y = state.height * 0.32;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, (state.levelUpUntil - state.time) / 0.45);
+    ctx.beginPath();
+    ctx.roundRect(x - 108, y - 29, 216, 58, 12);
+    ctx.fillStyle = 'rgba(6, 8, 18, 0.86)';
+    ctx.fill();
+    ctx.strokeStyle = '#316985';
+    ctx.stroke();
+    ctx.fillStyle = '#b3fcff';
+    ctx.shadowColor = '#1eeaff';
+    ctx.shadowBlur = 16;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '700 30px ' + hudFont;
+    ctx.fillText('LEVEL UP', x, y);
+    ctx.restore();
+  }
 
   if (state.lives === 0) {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';

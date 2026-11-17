@@ -5,6 +5,14 @@ export function rng(seed) {
 
 const STARTING_LIVES = 3;
 const DEMO_RESTART_DELAY = 2;
+const LEVEL_DURATION = 15;
+const LEVEL_UP_DURATION = 1.6;
+const BASE_FALL_SPEED = 140;
+const FALL_SPEED_PER_LEVEL = 20;
+const MAX_FALL_SPEED = 280;
+const BASE_SPAWN_INTERVAL = 1;
+const SPAWN_INTERVAL_STEP = 0.08;
+const MIN_SPAWN_INTERVAL = 0.45;
 
 export function createState(width, height, { demo = false, seed = 1 } = {}) {
   return {
@@ -21,11 +29,14 @@ export function createState(width, height, { demo = false, seed = 1 } = {}) {
     particles: [],
     floatingScores: [],
     time: 0,
+    level: 1,
+    levelUpUntil: 0,
   };
 }
 
 function spawnComet(state) {
-  state.comets.push({ x: 10 + state.random() * (state.width - 20), y: -10, r: 8, vy: 140 });
+  const vy = Math.min(MAX_FALL_SPEED, BASE_FALL_SPEED + (state.level - 1) * FALL_SPEED_PER_LEVEL);
+  state.comets.push({ x: 10 + state.random() * (state.width - 20), y: -10, r: 8, vy });
 }
 
 function demoSteer(state) {
@@ -61,6 +72,11 @@ export function update(state, input, dt) {
   }
 
   state.time += dt;
+  const level = Math.floor(state.time / LEVEL_DURATION) + 1;
+  if (level > state.level) {
+    state.level = level;
+    state.levelUpUntil = state.time + LEVEL_UP_DURATION;
+  }
   const controls = state.demo ? demoSteer(state) : input;
   const p = state.paddle;
   if (controls.left) p.x -= p.speed * dt;
@@ -70,7 +86,7 @@ export function update(state, input, dt) {
   state.spawnTimer -= dt;
   if (state.spawnTimer <= 0) {
     spawnComet(state);
-    state.spawnTimer = 1;
+    state.spawnTimer = Math.max(MIN_SPAWN_INTERVAL, BASE_SPAWN_INTERVAL - (level - 1) * SPAWN_INTERVAL_STEP);
   }
 
   for (const c of state.comets) c.y += c.vy * dt;
