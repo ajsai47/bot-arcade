@@ -114,6 +114,15 @@ export function render(ctx, state, time = performance.now() / 1000) {
   ctx.textAlign = 'right';
   ctx.fillStyle = '#f8a8fe';
   ctx.fillText('LIVES  ' + state.lives, state.width - 24, 33);
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffedb0';
+  ctx.shadowColor = '#ff9944';
+  ctx.shadowBlur = 10;
+  ctx.fillText('BEST  ' + (state.bestScore ?? 0), 24, 70);
+  if (state.newBest) {
+    ctx.textAlign = 'right';
+    ctx.fillText('NEW BEST!', state.width - 24, 70);
+  }
   ctx.fillStyle = 'rgba(127, 169, 247, 0.24)';
   ctx.fillRect(24, 45, state.width - 48, 1);
   ctx.textAlign = 'center';
@@ -153,11 +162,22 @@ export function render(ctx, state, time = performance.now() / 1000) {
     ctx.fillStyle = '#86f6ff';
     ctx.textAlign = 'center';
     ctx.font = '700 32px ' + hudFont;
-    ctx.fillText('Game over', x, y - 28);
+    ctx.fillText('Game over', x, y - 52);
     ctx.fillStyle = '#e3ddff';
     ctx.font = '18px ' + hudFont;
-    ctx.fillText('Final score: ' + state.score, x, y + 4);
-    ctx.fillText('Press Space / tap to restart', x, y + 36);
+    ctx.fillText('Final score: ' + state.score, x, y - 20);
+    ctx.fillStyle = '#ffedb0';
+    ctx.fillText('BEST  ' + (state.bestScore ?? 0), x, y + 12);
+    if (state.newBest) {
+      ctx.shadowColor = '#ff9944';
+      ctx.shadowBlur = 14;
+      ctx.font = '700 20px ' + hudFont;
+      ctx.fillText('NEW BEST!', x, y + 44);
+      ctx.shadowBlur = 0;
+    }
+    ctx.fillStyle = '#e3ddff';
+    ctx.font = '18px ' + hudFont;
+    ctx.fillText('Press Space / tap to restart', x, y + 80);
     ctx.restore();
   }
 }
