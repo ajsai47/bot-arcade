@@ -16,6 +16,10 @@ export function createState(width, height, { demo = false, seed = 1 } = {}) {
     score: 0,
     lives: STARTING_LIVES,
     gameOverTime: 0,
+    combo: 1,
+    streak: 0,
+    particles: [],
+    floatingScores: [],
     time: 0,
   };
 }
@@ -36,6 +40,18 @@ function demoSteer(state) {
 }
 
 export function update(state, input, dt) {
+  for (const particle of state.particles) {
+    particle.x += particle.vx * dt;
+    particle.y += particle.vy * dt;
+    particle.vy += 180 * dt;
+    particle.life -= dt;
+  }
+  state.particles = state.particles.filter((particle) => particle.life > 0);
+  for (const text of state.floatingScores) {
+    text.y -= 40 * dt;
+    text.life -= dt;
+  }
+  state.floatingScores = state.floatingScores.filter((text) => text.life > 0);
   if (state.lives === 0) {
     state.gameOverTime += dt;
     if (state.demo ? state.gameOverTime >= DEMO_RESTART_DELAY : input.restart) {
@@ -61,11 +77,21 @@ export function update(state, input, dt) {
   state.comets = state.comets.filter((c) => {
     const caught = c.y + c.r >= p.y && c.x >= p.x && c.x <= p.x + p.w && c.y < p.y + p.h;
     if (caught) {
-      state.score += 1;
+      state.streak += 1;
+      state.combo = Math.min(state.streak, 5);
+      state.score += state.combo;
+      state.floatingScores.push({ x: c.x, y: p.y - 12, value: state.combo, life: 1 });
+      for (let i = 0; i < 16; i++) {
+        const angle = i * Math.PI * 2 / 16;
+        const speed = 70 + (i % 3) * 25;
+        state.particles.push({ x: c.x, y: p.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 60, life: 0.7 });
+      }
       return false;
     }
     if (c.y + c.r >= state.height) {
       state.lives = Math.max(0, state.lives - 1);
+      state.streak = 0;
+      state.combo = 1;
       return false;
     }
     return true;

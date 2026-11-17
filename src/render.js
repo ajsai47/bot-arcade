@@ -9,10 +9,25 @@ export function render(ctx, state) {
   ctx.fillStyle = '#999';
   ctx.fillRect(p.x, p.y, p.w, p.h);
 
+  ctx.save();
+  ctx.fillStyle = '#ffd166';
+  for (const particle of state.particles) {
+    ctx.globalAlpha = particle.life / 0.7;
+    ctx.fillRect(particle.x - 2, particle.y - 2, 4, 4);
+  }
+  ctx.font = 'bold 22px monospace';
+  ctx.textAlign = 'center';
+  for (const text of state.floatingScores) {
+    ctx.globalAlpha = text.life;
+    ctx.fillText('+' + text.value, Math.max(20, Math.min(state.width - 20, text.x)), text.y);
+  }
+  ctx.restore();
+
   ctx.fillStyle = '#fff';
   ctx.font = '14px monospace';
   ctx.fillText('score ' + state.score, 8, 18);
   ctx.fillText('lives ' + state.lives, 8, 36);
+  ctx.fillText('combo x' + state.combo, 8, 54);
 
   if (state.lives === 0) {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
