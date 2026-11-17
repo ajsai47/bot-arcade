@@ -13,6 +13,11 @@ const MAX_FALL_SPEED = 280;
 const BASE_SPAWN_INTERVAL = 1;
 const SPAWN_INTERVAL_STEP = 0.08;
 const MIN_SPAWN_INTERVAL = 0.45;
+const BASE_PADDLE_WIDTH = 100;
+const WIDE_PADDLE_WIDTH = BASE_PADDLE_WIDTH * 1.6;
+const PADDLE_SHRINK_SPEED = (WIDE_PADDLE_WIDTH - BASE_PADDLE_WIDTH) / 0.35;
+const GOLDEN_COMET_INTERVAL = 8;
+export const WIDE_PADDLE_DURATION = 6;
 
 function bestScoreKey(demo) {
   return demo ? 'comet-catcher:demo-best' : 'comet-catcher:best';
@@ -26,9 +31,11 @@ export function createState(width, height, { demo = false, seed = 1, bestScore =
   return {
     width, height, demo, seed,
     random: rng(seed),
-    paddle: { x: width / 2 - 50, y: height - 30, w: 100, h: 12, speed: 420 },
+    paddle: { x: (width - BASE_PADDLE_WIDTH) / 2, y: height - 30, w: BASE_PADDLE_WIDTH, h: 12, speed: 420 },
+    widePaddleTime: 0,
     comets: [],
     spawnTimer: 0,
+    demoCometsUntilGold: 4,
     score: 0,
     bestScore,
     newBest: false,
@@ -46,7 +53,17 @@ export function createState(width, height, { demo = false, seed = 1, bestScore =
 
 function spawnComet(state) {
   const vy = Math.min(MAX_FALL_SPEED, BASE_FALL_SPEED + (state.level - 1) * FALL_SPEED_PER_LEVEL);
-  state.comets.push({ x: 10 + state.random() * (state.width - 20), y: -10, r: 8, vy });
+  const x = 10 + state.random() * (state.width - 20);
+  const golden = state.demo ? --state.demoCometsUntilGold === 0 : state.random() < 1 / GOLDEN_COMET_INTERVAL;
+  if (golden && state.demo) state.demoCometsUntilGold = GOLDEN_COMET_INTERVAL;
+  state.comets.push({ x, y: -10, r: 8, vy, golden });
+}
+
+function resizePaddle(state, width) {
+  const p = state.paddle;
+  const nextWidth = Math.min(state.width, width);
+  p.x = Math.max(0, Math.min(state.width - nextWidth, p.x + (p.w - nextWidth) / 2));
+  p.w = nextWidth;
 }
 
 function demoSteer(state) {
@@ -54,7 +71,7 @@ function demoSteer(state) {
   const center = state.paddle.x + state.paddle.w / 2;
   if (!target) return { left: false, right: false };
   const resolved = state.score + STARTING_LIVES - state.lives;
-  if (resolved % 3 === 2) {
+  if (!target.golden && resolved % 3 === 2) {
     return { left: target.x > state.width / 2, right: target.x <= state.width / 2 };
   }
   return { left: target.x < center - 8, right: target.x > center + 8 };
@@ -87,8 +104,13 @@ export function update(state, input, dt) {
     state.level = level;
     state.levelUpUntil = state.time + LEVEL_UP_DURATION;
   }
-  const controls = state.demo ? demoSteer(state) : input;
   const p = state.paddle;
+  const shrinkTime = Math.max(0, dt - state.widePaddleTime);
+  state.widePaddleTime = Math.max(0, state.widePaddleTime - dt);
+  if (shrinkTime > 0 && p.w > BASE_PADDLE_WIDTH) {
+    resizePaddle(state, Math.max(BASE_PADDLE_WIDTH, p.w - PADDLE_SHRINK_SPEED * shrinkTime));
+  }
+  const controls = state.demo ? demoSteer(state) : input;
   if (controls.left) p.x -= p.speed * dt;
   if (controls.right) p.x += p.speed * dt;
   p.x = Math.max(0, Math.min(state.width - p.w, p.x));
@@ -103,6 +125,10 @@ export function update(state, input, dt) {
   state.comets = state.comets.filter((c) => {
     const caught = c.y + c.r >= p.y && c.x >= p.x && c.x <= p.x + p.w && c.y < p.y + p.h;
     if (caught) {
+      if (c.golden) {
+        resizePaddle(state, WIDE_PADDLE_WIDTH);
+        state.widePaddleTime = WIDE_PADDLE_DURATION;
+      }
       state.streak += 1;
       state.combo = Math.min(state.streak, 5);
       state.score += state.combo;
