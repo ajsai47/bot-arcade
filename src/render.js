@@ -1,3 +1,5 @@
+import { WIDE_PADDLE_DURATION } from './game.js';
+
 const hudFont = 'ui-monospace, "SFMono-Regular", Consolas, monospace';
 const starLayers = [
   { count: 104, speed: 2, size: 1, color: 'rgba(154, 175, 247, 0.32)' },
@@ -36,12 +38,12 @@ function drawSpace(ctx, width, height, time) {
   }
 }
 
-function drawComet(ctx, { x, y, r }) {
-  const tip = y - r * 6;
+function drawComet(ctx, { x, y, r, golden }) {
+  const tip = y - r * (golden ? 8 : 6);
   const tail = ctx.createLinearGradient(x, tip, x, y);
-  tail.addColorStop(0, 'rgba(167, 83, 255, 0)');
-  tail.addColorStop(0.6, 'rgba(175, 88, 255, 0.5)');
-  tail.addColorStop(1, '#ff83ec');
+  tail.addColorStop(0, golden ? 'rgba(255, 175, 51, 0)' : 'rgba(167, 83, 255, 0)');
+  tail.addColorStop(0.6, golden ? 'rgba(255, 175, 51, 0.6)' : 'rgba(175, 88, 255, 0.5)');
+  tail.addColorStop(1, golden ? '#ffe28c' : '#ff83ec');
   ctx.fillStyle = tail;
   ctx.beginPath();
   ctx.moveTo(x, tip);
@@ -51,14 +53,14 @@ function drawComet(ctx, { x, y, r }) {
   ctx.fill();
 
   const halo = ctx.createRadialGradient(x, y, r * 0.65, x, y, r * 2.5);
-  halo.addColorStop(0, 'rgba(255, 99, 224, 0.8)');
-  halo.addColorStop(1, 'rgba(255, 99, 224, 0)');
+  halo.addColorStop(0, golden ? 'rgba(255, 190, 59, 0.9)' : 'rgba(255, 99, 224, 0.8)');
+  halo.addColorStop(1, golden ? 'rgba(255, 190, 59, 0)' : 'rgba(255, 99, 224, 0)');
   ctx.fillStyle = halo;
   ctx.fillRect(x - r * 2.5, y - r * 2.5, r * 5, r * 5);
   const core = ctx.createRadialGradient(x - r * 0.2, y - r * 0.25, 0, x, y, r);
-  core.addColorStop(0, '#fff8ff');
-  core.addColorStop(0.55, '#ffc5fa');
-  core.addColorStop(1, '#fb65dc');
+  core.addColorStop(0, golden ? '#fffce6' : '#fff8ff');
+  core.addColorStop(0.55, golden ? '#ffe38a' : '#ffc5fa');
+  core.addColorStop(1, golden ? '#ffac2e' : '#fb65dc');
   ctx.fillStyle = core;
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -72,16 +74,25 @@ export function render(ctx, state, time = performance.now() / 1000) {
 
   ctx.save();
   const p = state.paddle;
-  ctx.shadowColor = '#1eeaff';
-  ctx.shadowBlur = 16;
+  const powered = state.widePaddleTime > 0;
+  ctx.shadowColor = powered ? '#ffb02e' : '#1eeaff';
+  ctx.shadowBlur = powered ? 22 : 16;
   const paddle = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
-  paddle.addColorStop(0, '#daffff');
-  paddle.addColorStop(0.32, '#62f7ff');
-  paddle.addColorStop(1, '#0da8e9');
+  paddle.addColorStop(0, powered ? '#fff8d3' : '#daffff');
+  paddle.addColorStop(0.32, powered ? '#ffda67' : '#62f7ff');
+  paddle.addColorStop(1, powered ? '#ea8a19' : '#0da8e9');
   ctx.fillStyle = paddle;
   ctx.beginPath();
   ctx.roundRect(p.x, p.y, p.w, p.h, p.h / 2);
   ctx.fill();
+  if (powered) {
+    const barY = p.y + p.h + 6;
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255, 202, 97, 0.25)';
+    ctx.fillRect(p.x, barY, p.w, 4);
+    ctx.fillStyle = '#ffda67';
+    ctx.fillRect(p.x, barY, p.w * state.widePaddleTime / WIDE_PADDLE_DURATION, 4);
+  }
   ctx.restore();
 
   ctx.save();
